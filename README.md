@@ -9,7 +9,7 @@
 ## Design Principles
 
 - The API (HTML) must always reflect the data (JSON)
-	- The Core doesn't necessarily need to reflect, but must have in mind
+  - The Core doesn't necessarily need to reflect, but must have in mind
 - The Core and API are decoupled
   - The Core provides functionality for: DOM manipulation, plugins, event handling, etc.
   - The Core are a series of decouple functions that can have data passed down
@@ -26,7 +26,6 @@
 ### File Structure
 
 The current file system is structured so that each file are categorized based on high-level function. Although this is a valid way of organizing code, it is overall confusing when maintaining a semi-large application library. To fix this issue, the file structure needs to be refactored. A possible way to group is to do:
-
 
 ```
 utils/
@@ -59,7 +58,6 @@ import { getNearestKey, so on... } from '../core/dom-api-helpers';
 
 const fooAttribute = new Plugin(
   {
-    prefix: 'foo:',
     type: 'mutator / accessor' /* changes what props are available */
   },
   ({ data, event, so on... }) => {
@@ -77,5 +75,48 @@ This ensures that creating new attributes is insanely easy - attributes can be r
 Currently, the Remake architecture requires the developer to reimplement a lot of the same fundemental functionality in slightly different ways.
 
 - DOM Manipulation
+
+```js
+export const addEventListener = (el, event, callback) => {
+  const fn = () => {
+    if (el[event]) el[event]();
+    callback();
+  }
+  el.addEventListener(event, fn);
+  el[event] = fn;
+}
+
+export const getEventListener = (el, event) => {
+  return el[event];
+}
+
+export const removeEventListener = (el, event) => {
+  el.removeEventListener(event, el[event]);
+}
+```
+
 - Plugins
-- Event Handling
+
+```js
+export class Plugin {
+  constructor({ hooks, type }, run) {
+    this.hooks = hooks;
+    this.run = run;
+    this.type = type;
+  }
+
+  init() {
+    if (this.hooks.init) this.hooks.init();
+
+    // use this.type to detect mutator/accessor/other types
+  }
+
+  destroy() {
+    if (this.hooks.destroy) this.hooks.destroy();
+
+    // remove all event listeners
+  }
+
+  // Hook-based controls
+}
+```

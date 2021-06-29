@@ -1,5 +1,11 @@
 # Remake Internals Refactor Brainstorming
 
+## High Level Summary
+
+The Remake internal API is filled with redudancies and generally non-conformist, as it was originally bootstrapped to focus on shipping a product rather than scalability and maintainability.
+
+To remedy this issue, the new redesign focuses on one idea: modular architecture. To achieve this, every feature or API method is a plugin. This allows for user provided plugins to be added seamlessly (scalability), and the developer to build features robustly (maintainability).
+
 ## Terminology
 
 - **API**: What the user interacts with. In Remake, it would be the custom attributes.
@@ -76,6 +82,18 @@ Currently, the Remake architecture requires the developer to reimplement a lot o
 
 - DOM Manipulation
 
+The main way Remake discovers elements is searching. To improve performacne, Remake will try to reduce the parent element, thereby reducing scope.
+
+```js
+const search = (el, { attr, name, ...}) => {
+  // descope logic
+  return [...document.querySelectorAll(name)].someFilterFunction();
+}
+```
+
+
+Event listener functionality allows for fine grained control
+
 ```js
 export const addEventListener = (el, event, callback) => {
   const fn = () => {
@@ -97,7 +115,12 @@ export const removeEventListener = (el, event) => {
 
 - Plugins
 
+Plugins are based off of a modular but replicatable design, allowing the develop to hook into lifecycle hooks as well as adapt the plugin based on a type.
+
 ```js
+const ACCESSOR = Symbol('ACCESSOR');
+const MUTATOR = Symbol('MUTATOR');
+
 export class Plugin {
   constructor({ hooks, type }, run) {
     this.hooks = hooks;
@@ -108,7 +131,16 @@ export class Plugin {
   init() {
     if (this.hooks.init) this.hooks.init();
 
-    // use this.type to detect mutator/accessor/other types
+    switch (this.type) {
+      case ACCESSOR: {
+        // Can call other commands, etc
+      }
+      case MUTATOR: {
+
+      }
+    }
+
+    run(...);
   }
 
   destroy() {
@@ -116,7 +148,18 @@ export class Plugin {
 
     // remove all event listeners
   }
+}
+```
 
-  // Hook-based controls
+Example of how the modular command system would work:
+
+```js
+const commands = {
+  '@': (...) => ...,
+  'computed: ': (...) => ...
+}
+
+const handleCommand = (...) => {
+
 }
 ```
